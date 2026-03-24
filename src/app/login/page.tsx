@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -16,6 +17,7 @@ export default function LoginPage() {
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState("");
   const supabase = createClient();
+  const router = useRouter();
 
   // Googleでログイン
   const handleGoogleLogin = async () => {
@@ -56,6 +58,7 @@ export default function LoginPage() {
         password,
       });
       if (error) setMessage(error.message);
+      else router.push("/dashboard");
     }
     setLoading(false);
   };
