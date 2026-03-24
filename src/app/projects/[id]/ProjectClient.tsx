@@ -152,12 +152,12 @@ export default function ProjectClient({
   };
 
   // 画像保存（ガントエリアをPNG出力）
+  // html2canvas は Tailwind v4 の oklch() カラー関数に非対応のため html-to-image を使用
   const handleSaveImage = async () => {
     const el = ganttRef.current;
     if (!el) return;
-    const { default: html2canvas } = await import("html2canvas");
-    const canvas = await html2canvas(el, { scale: 2, useCORS: true });
-    const url = canvas.toDataURL("image/png");
+    const { toPng } = await import("html-to-image");
+    const url = await toPng(el, { pixelRatio: 2 });
     const a = document.createElement("a");
     a.href = url;
     a.download = `${project.name}_gantt_${new Date().toISOString().split("T")[0]}.png`;
