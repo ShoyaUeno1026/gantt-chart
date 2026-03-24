@@ -26,7 +26,7 @@ export default async function ProfilePage() {
       <main className="max-w-lg mx-auto px-6 py-8">
         <ProfileClient
           email={user.email ?? ""}
-          displayName={user.user_metadata?.display_name ?? ""}
+          displayName={user.user_metadata?.display_name ?? (user.email?.split("@")[0] ?? "")}
         />
       </main>
     </div>

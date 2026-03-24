@@ -50,7 +50,10 @@ export default function LoginPage() {
       const { error } = await supabase.auth.signUp({
         email,
         password,
-        options: { emailRedirectTo: `${window.location.origin}/auth/callback` },
+        options: {
+          emailRedirectTo: `${window.location.origin}/auth/callback`,
+          data: { display_name: email.split("@")[0] },
+        },
       });
       if (error) setMessage(error.message);
       else setMessage("確認メールを送信しました。メールを確認してください。");

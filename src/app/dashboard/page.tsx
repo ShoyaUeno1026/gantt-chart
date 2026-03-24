@@ -8,10 +8,11 @@ import type { Project } from "@/lib/types/database";
 // プロジェクト一覧ページ（ダッシュボード）
 export default async function DashboardPage() {
   const supabase = await createClient();
-  const { data: projects } = await supabase
-    .from("projects")
-    .select("*")
-    .order("created_at", { ascending: false });
+  const [{ data: projects }, { data: { user } }] = await Promise.all([
+    supabase.from("projects").select("*").order("created_at", { ascending: false }),
+    supabase.auth.getUser(),
+  ]);
+  const displayName = user?.user_metadata?.display_name ?? user?.email?.split("@")[0] ?? "";
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -24,10 +25,10 @@ export default async function DashboardPage() {
           </Link>
           <Link href="/settings/profile">
             <Button variant="outline" size="sm" className="flex items-center gap-1.5">
-              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <svg className="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M15.75 6a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0zM4.501 20.118a7.5 7.5 0 0114.998 0A17.933 17.933 0 0112 21.75c-2.676 0-5.216-.584-7.499-1.632z" />
               </svg>
-              アカウント
+              {displayName}
             </Button>
           </Link>
           <LogoutButton />
