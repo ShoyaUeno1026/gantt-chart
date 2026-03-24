@@ -24,9 +24,13 @@ function parseDate(s: string): Date {
   return new Date(y, m - 1, d);
 }
 
-// Date → YYYY-MM-DD
+// Date → YYYY-MM-DD（ローカルタイムゾーン基準）
+// toISOString() はUTC変換されるため、日本時間では日付がずれる場合がある
 function toDateStr(d: Date): string {
-  return d.toISOString().split("T")[0];
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, "0");
+  const day = String(d.getDate()).padStart(2, "0");
+  return `${y}-${m}-${day}`;
 }
 
 // 担当者リストから代表カラーを取得
@@ -49,6 +53,10 @@ export default function GanttRow({
   const supabase = createClient();
   const [editing, setEditing] = useState(false);
   const [showMemberSelect, setShowMemberSelect] = useState(false);
+
+  // バードラッグ用の状態
+  const barDragRef = useRef<{ startX: number } | null>(null);
+  const [barDragOffset, setBarDragOffset] = useState(0); // ドラッグ中の日数オフセット
 
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } =
     useSortable({ id: task.id });
@@ -101,6 +109,40 @@ export default function GanttRow({
   };
 
   const assignedMemberIds = new Set(task.task_members?.map((tm) => tm.member.id) ?? []);
+
+  // ---- バードラッグ処理 ----
+
+  // ドラッグ開始: ポインターキャプチャで要素外のムーブも取得
+  const handleBarPointerDown = (e: React.PointerEvent<HTMLDivElement>) => {
+    e.stopPropagation(); // @dnd-kit の行並び替えと競合防止
+    e.preventDefault();
+    barDragRef.current = { startX: e.clientX };
+    e.currentTarget.setPointerCapture(e.pointerId);
+  };
+
+  // ドラッグ中: 移動量を日数に変換してオフセット更新
+  const handleBarPointerMove = (e: React.PointerEvent<HTMLDivElement>) => {
+    if (!barDragRef.current) return;
+    const dx = e.clientX - barDragRef.current.startX;
+    setBarDragOffset(Math.round(dx / colWidth));
+  };
+
+  // ドラッグ終了: 新しい日付を計算してDBに保存
+  const handleBarPointerUp = async (e: React.PointerEvent<HTMLDivElement>) => {
+    if (!barDragRef.current) return;
+    const dx = e.clientX - barDragRef.current.startX;
+    const dayOffset = Math.round(dx / colWidth);
+    barDragRef.current = null;
+    setBarDragOffset(0);
+
+    if (dayOffset === 0) return;
+
+    const msOffset = dayOffset * 86400000;
+    await updateField({
+      start_date: toDateStr(new Date(parseDate(task.start_date).getTime() + msOffset)),
+      end_date:   toDateStr(new Date(parseDate(task.end_date).getTime()   + msOffset)),
+    });
+  };
 
   return (
     <div
@@ -266,14 +308,19 @@ export default function GanttRow({
         {/* ガントバー */}
         {barLeft < totalDays && barEnd >= 0 && (
           <div
-            className="absolute top-1/2 -translate-y-1/2 h-6 rounded flex items-center px-2 text-white text-[11px] font-medium overflow-hidden whitespace-nowrap select-none"
+            className="absolute top-1/2 -translate-y-1/2 h-6 rounded flex items-center px-2 text-white text-[11px] font-medium overflow-hidden whitespace-nowrap select-none cursor-grab active:cursor-grabbing"
             style={{
-              left: `${barLeft * colWidth}px`,
+              left: `${(barLeft + barDragOffset) * colWidth}px`,
               width: `${barWidth * colWidth - 2}px`,
               backgroundColor: task.is_completed ? "#9ca3af" : barColor,
-              opacity: task.is_completed ? 0.7 : 1,
+              opacity: task.is_completed ? (barDragOffset !== 0 ? 0.5 : 0.7) : (barDragOffset !== 0 ? 0.85 : 1),
+              transition: barDragOffset !== 0 ? "none" : undefined,
             }}
             title={task.name}
+            onPointerDown={handleBarPointerDown}
+            onPointerMove={handleBarPointerMove}
+            onPointerUp={handleBarPointerUp}
+            onPointerCancel={handleBarPointerUp}
           >
             {barWidth > 2 && task.name}
           </div>
