@@ -6,6 +6,9 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 
+// 登録を許可するメールドメイン（環境変数で管理）
+const ALLOWED_DOMAIN = process.env.NEXT_PUBLIC_ALLOWED_EMAIL_DOMAIN ?? "";
+
 export default function LoginPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -34,6 +37,12 @@ export default function LoginPage() {
     setMessage("");
 
     if (isSignUp) {
+      // ドメインチェック（環境変数が設定されている場合のみ）
+      if (ALLOWED_DOMAIN && !email.toLowerCase().endsWith(`@${ALLOWED_DOMAIN}`)) {
+        setMessage(`登録できるのは @${ALLOWED_DOMAIN} のメールアドレスのみです`);
+        setLoading(false);
+        return;
+      }
       const { error } = await supabase.auth.signUp({
         email,
         password,
