@@ -37,8 +37,11 @@ export async function proxy(request: NextRequest) {
 
   const { pathname } = request.nextUrl;
 
+  // 認証不要なパス（ログイン・パスワード再設定）
+  const publicPaths = ["/login", "/auth/reset-password"];
+
   // 未ログインでログイン不要ページ以外へアクセスした場合はログインページへ
-  if (!user && pathname !== "/login") {
+  if (!user && !publicPaths.includes(pathname)) {
     const url = request.nextUrl.clone();
     url.pathname = "/login";
     return NextResponse.redirect(url);

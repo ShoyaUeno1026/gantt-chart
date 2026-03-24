@@ -14,6 +14,8 @@ export default function LoginPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [isSignUp, setIsSignUp] = useState(false);
+  const [isForgotPassword, setIsForgotPassword] = useState(false);
+  const [forgotEmail, setForgotEmail] = useState("");
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState("");
   const supabase = createClient();
@@ -63,9 +65,23 @@ export default function LoginPage() {
     setLoading(false);
   };
 
+  // パスワードリセットメールを送信
+  const handleForgotPassword = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setLoading(true);
+    setMessage("");
+    const { error } = await supabase.auth.resetPasswordForEmail(forgotEmail, {
+      redirectTo: `${window.location.origin}/auth/reset-password`,
+    });
+    setLoading(false);
+    if (error) setMessage(error.message);
+    else setMessage("パスワードリセット用のメールを送信しました。メールを確認してください。");
+  };
+
   // モード切り替え時はメッセージをリセット
   const toggleMode = () => {
     setIsSignUp((prev) => !prev);
+    setIsForgotPassword(false);
     setMessage("");
   };
 
@@ -153,45 +169,85 @@ export default function LoginPage() {
           </div>
         </div>
 
-        {/* メール・パスワードフォーム */}
-        <form onSubmit={handleEmailAuth} className="space-y-4">
-          <div className="space-y-1">
-            <Label htmlFor="email">メールアドレス</Label>
-            <Input
-              id="email"
-              type="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              placeholder="you@example.com"
-              required
-            />
-          </div>
-          <div className="space-y-1">
-            <Label htmlFor="password">パスワード</Label>
-            <Input
-              id="password"
-              type="password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              placeholder="6文字以上"
-              required
-            />
-          </div>
-
-          {message && (
-            <p
-              className={`text-sm text-center ${
-                message.includes("送信しました") ? "text-green-600" : "text-red-500"
-              }`}
-            >
-              {message}
+        {/* パスワードを忘れた場合のフォーム */}
+        {isForgotPassword ? (
+          <form onSubmit={handleForgotPassword} className="space-y-4">
+            <p className="text-sm text-gray-500">
+              登録済みのメールアドレスを入力してください。パスワードリセット用のリンクを送信します。
             </p>
-          )}
-
-          <Button type="submit" className="w-full" disabled={loading}>
-            {loading ? "処理中..." : isSignUp ? "アカウントを作成する" : "ログインする"}
-          </Button>
-        </form>
+            <div className="space-y-1">
+              <Label htmlFor="forgot-email">メールアドレス</Label>
+              <Input
+                id="forgot-email"
+                type="email"
+                value={forgotEmail}
+                onChange={(e) => setForgotEmail(e.target.value)}
+                placeholder="you@example.com"
+                required
+              />
+            </div>
+            {message && (
+              <p className={`text-sm text-center ${message.includes("送信しました") ? "text-green-600" : "text-red-500"}`}>
+                {message}
+              </p>
+            )}
+            <Button type="submit" className="w-full" disabled={loading}>
+              {loading ? "送信中..." : "リセットメールを送信"}
+            </Button>
+            <button
+              type="button"
+              onClick={() => { setIsForgotPassword(false); setMessage(""); }}
+              className="w-full text-sm text-gray-400 hover:text-gray-600"
+            >
+              ← ログインに戻る
+            </button>
+          </form>
+        ) : (
+          /* メール・パスワードフォーム */
+          <form onSubmit={handleEmailAuth} className="space-y-4">
+            <div className="space-y-1">
+              <Label htmlFor="email">メールアドレス</Label>
+              <Input
+                id="email"
+                type="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                placeholder="you@example.com"
+                required
+              />
+            </div>
+            <div className="space-y-1">
+              <div className="flex items-center justify-between">
+                <Label htmlFor="password">パスワード</Label>
+                {!isSignUp && (
+                  <button
+                    type="button"
+                    onClick={() => { setIsForgotPassword(true); setForgotEmail(email); setMessage(""); }}
+                    className="text-xs text-indigo-500 hover:text-indigo-700"
+                  >
+                    パスワードを忘れた方
+                  </button>
+                )}
+              </div>
+              <Input
+                id="password"
+                type="password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                placeholder="6文字以上"
+                required
+              />
+            </div>
+            {message && (
+              <p className={`text-sm text-center ${message.includes("送信しました") ? "text-green-600" : "text-red-500"}`}>
+                {message}
+              </p>
+            )}
+            <Button type="submit" className="w-full" disabled={loading}>
+              {loading ? "処理中..." : isSignUp ? "アカウントを作成する" : "ログインする"}
+            </Button>
+          </form>
+        )}
       </div>
     </div>
   );
