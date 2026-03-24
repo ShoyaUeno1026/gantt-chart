@@ -51,12 +51,56 @@ export default function LoginPage() {
     setLoading(false);
   };
 
+  // モード切り替え時はメッセージをリセット
+  const toggleMode = () => {
+    setIsSignUp((prev) => !prev);
+    setMessage("");
+  };
+
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-50">
       <div className="w-full max-w-md bg-white rounded-2xl shadow-sm p-8 space-y-6">
+
+        {/* アプリ名（常に表示） */}
         <div className="text-center">
-          <h1 className="text-2xl font-bold text-gray-900">工程表ガントチャート</h1>
-          <p className="text-sm text-gray-500 mt-1">チームで進捗を共有</p>
+          <p className="text-xs font-medium text-indigo-600 tracking-widest uppercase mb-2">
+            工程表ガントチャート
+          </p>
+          {/* モードに応じてタイトルを切り替え */}
+          <h1 className="text-2xl font-bold text-gray-900">
+            {isSignUp ? "アカウントを作成" : "ログイン"}
+          </h1>
+          <p className="text-sm text-gray-500 mt-1">
+            {isSignUp
+              ? "チームに参加するためアカウントを作成してください"
+              : "チームの工程表にアクセス"}
+          </p>
+        </div>
+
+        {/* モード切り替えタブ */}
+        <div className="flex rounded-lg border border-gray-200 p-1 gap-1">
+          <button
+            type="button"
+            onClick={() => !isSignUp || toggleMode()}
+            className={`flex-1 py-1.5 text-sm rounded-md font-medium transition-colors ${
+              !isSignUp
+                ? "bg-indigo-600 text-white"
+                : "text-gray-500 hover:text-gray-700"
+            }`}
+          >
+            ログイン
+          </button>
+          <button
+            type="button"
+            onClick={() => isSignUp || toggleMode()}
+            className={`flex-1 py-1.5 text-sm rounded-md font-medium transition-colors ${
+              isSignUp
+                ? "bg-indigo-600 text-white"
+                : "text-gray-500 hover:text-gray-700"
+            }`}
+          >
+            新規登録
+          </button>
         </div>
 
         {/* Googleログイン */}
@@ -85,7 +129,7 @@ export default function LoginPage() {
               fill="#EA4335"
             />
           </svg>
-          Google でログイン
+          Google で{isSignUp ? "登録" : "ログイン"}
         </Button>
 
         <div className="relative">
@@ -93,7 +137,7 @@ export default function LoginPage() {
             <span className="w-full border-t border-gray-200" />
           </div>
           <div className="relative flex justify-center text-xs text-gray-400">
-            <span className="bg-white px-2">または</span>
+            <span className="bg-white px-2">またはメールアドレスで</span>
           </div>
         </div>
 
@@ -123,24 +167,19 @@ export default function LoginPage() {
           </div>
 
           {message && (
-            <p className="text-sm text-center text-red-500">{message}</p>
+            <p
+              className={`text-sm text-center ${
+                message.includes("送信しました") ? "text-green-600" : "text-red-500"
+              }`}
+            >
+              {message}
+            </p>
           )}
 
           <Button type="submit" className="w-full" disabled={loading}>
-            {loading ? "処理中..." : isSignUp ? "アカウント作成" : "ログイン"}
+            {loading ? "処理中..." : isSignUp ? "アカウントを作成する" : "ログインする"}
           </Button>
         </form>
-
-        <p className="text-center text-sm text-gray-500">
-          {isSignUp ? "すでにアカウントをお持ちですか？" : "アカウントをお持ちでないですか？"}{" "}
-          <button
-            type="button"
-            onClick={() => setIsSignUp(!isSignUp)}
-            className="text-indigo-600 hover:underline"
-          >
-            {isSignUp ? "ログイン" : "新規登録"}
-          </button>
-        </p>
       </div>
     </div>
   );

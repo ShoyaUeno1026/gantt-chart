@@ -2,6 +2,7 @@
 
 import { useState, useCallback, useEffect } from "react";
 import dynamic from "next/dynamic";
+import "gantt-task-react/dist/index.css";
 import type { Task as GanttTask, ViewMode } from "gantt-task-react";
 import type { TaskWithMember, Member } from "@/lib/types/database";
 import { createClient } from "@/lib/supabase/client";
