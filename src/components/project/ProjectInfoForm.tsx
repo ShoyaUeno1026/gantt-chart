@@ -17,11 +17,27 @@ function calcDuration(start: string | null, end: string | null): string {
   return diff > 0 ? `${diff}日間` : "-";
 }
 
+// 日付文字列（YYYY-MM-DD）→ Date（ローカルタイムゾーン基準）
+function parseDate(s: string): Date {
+  const [y, m, d] = s.split("-").map(Number);
+  return new Date(y, m - 1, d);
+}
+
+// 工程の日数を計算（最小1日）
+function taskDays(task: Task): number {
+  const start = parseDate(task.start_date);
+  const end = parseDate(task.end_date);
+  return Math.max(1, Math.round((end.getTime() - start.getTime()) / 86400000) + 1);
+}
+
 // プロジェクト基本情報フォーム（上部）
 export default function ProjectInfoForm({ project, tasks, onChange }: Props) {
+  // 日数ベース進捗: 完了工程の日数合計 ÷ 全工程の日数合計
+  const totalDays = tasks.reduce((sum, t) => sum + taskDays(t), 0);
+  const completedDays = tasks.filter((t) => t.is_completed).reduce((sum, t) => sum + taskDays(t), 0);
+  const progressPct = totalDays > 0 ? Math.round((completedDays / totalDays) * 100) : 0;
   const completedCount = tasks.filter((t) => t.is_completed).length;
   const totalCount = tasks.length;
-  const progressPct = totalCount > 0 ? Math.round((completedCount / totalCount) * 100) : 0;
   const duration = calcDuration(project.created_at?.split("T")[0] ?? null, project.end_date);
 
   return (
@@ -95,7 +111,7 @@ export default function ProjectInfoForm({ project, tasks, onChange }: Props) {
             <div className="flex items-center justify-between">
               <span className="text-xs text-gray-500">完了工程</span>
               <span className="text-xs font-medium text-indigo-600">
-                {progressPct}% ({completedCount}/{totalCount}工程)
+                {progressPct}% ({completedCount}/{totalCount}工程 · {completedDays}/{totalDays}日)
               </span>
             </div>
             <div className="w-full bg-gray-100 rounded-full h-1.5">
