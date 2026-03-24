@@ -33,10 +33,10 @@ function toDateStr(d: Date): string {
   return `${y}-${m}-${day}`;
 }
 
-// 担当者リストから代表カラーを取得
+// 担当者リストから代表カラーを取得（工程ごとの役割色を使用）
 function getBarColor(task: TaskWithMembers): string {
-  const first = task.task_members?.[0]?.member;
-  return first?.role_data?.color ?? "#6366f1";
+  const first = task.task_members?.[0];
+  return first?.role?.color ?? "#6366f1";
 }
 
 export default function GanttRow({
@@ -90,25 +90,34 @@ export default function GanttRow({
   // 完了トグル
   const toggleComplete = () => updateField({ is_completed: !task.is_completed });
 
-  // 担当者の追加/削除（多対多）
-  const toggleMember = async (memberId: string) => {
-    const exists = task.task_members?.some((tm) => tm.member.id === memberId);
+  // 担当者の追加/削除（member_id + role_id のペアで管理）
+  const toggleMemberRole = async (memberId: string, roleId: string) => {
+    const key = `${memberId}__${roleId}`;
+    const exists = assignedSet.has(key);
     if (exists) {
       await supabase.from("task_members").delete()
-        .eq("task_id", task.id).eq("member_id", memberId);
+        .eq("task_id", task.id).eq("member_id", memberId).eq("role_id", roleId);
     } else {
-      await supabase.from("task_members").insert({ task_id: task.id, member_id: memberId });
+      await supabase.from("task_members").insert({ task_id: task.id, member_id: memberId, role_id: roleId });
     }
     // 最新データを再取得
     const { data } = await supabase
       .from("tasks")
-      .select("*, task_members(member:members(*, role_data:roles(*)))")
+      .select("*, task_members(member:members(*, member_roles(role:roles(*))), role:roles(*))")
       .eq("id", task.id)
       .single();
     if (data) onUpdate(data as TaskWithMembers);
   };
 
-  const assignedMemberIds = new Set(task.task_members?.map((tm) => tm.member.id) ?? []);
+  // アサイン済み判定（member_id + role_id のペア）
+  const assignedSet = new Set(
+    task.task_members?.map((tm) => `${tm.member.id}__${tm.role_id}`) ?? []
+  );
+
+  // メンバー × 役割の選択肢を展開（例：Aさん×ディレクター、Aさん×エンジニア）
+  const memberRoleOptions = members.flatMap((m) =>
+    m.member_roles.map((mr) => ({ member: m, role: mr.role }))
+  );
 
   // ---- バードラッグ処理 ----
 
@@ -200,11 +209,11 @@ export default function GanttRow({
             onClick={() => setShowMemberSelect(!showMemberSelect)}
           >
             {task.task_members?.length > 0 ? (
-              task.task_members.map((tm) => (
+              task.task_members.map((tm, i) => (
                 <span
-                  key={tm.member.id}
+                  key={`${tm.member.id}__${tm.role_id ?? i}`}
                   className="text-[10px] text-white px-1.5 py-0.5 rounded-full"
-                  style={{ backgroundColor: tm.member.role_data?.color ?? "#9ca3af" }}
+                  style={{ backgroundColor: tm.role?.color ?? "#9ca3af" }}
                 >
                   {tm.member.name}
                 </span>
@@ -213,22 +222,27 @@ export default function GanttRow({
               <span className="text-xs text-gray-300">-</span>
             )}
           </div>
-          {/* 担当者選択ドロップダウン */}
+          {/* 担当者選択ドロップダウン（メンバー×役割の組み合わせで表示） */}
           {showMemberSelect && (
-            <div className="absolute top-full left-0 z-30 bg-white border border-gray-200 rounded-lg shadow-lg p-2 min-w-35 space-y-1">
-              {members.map((m) => (
-                <label key={m.id} className="flex items-center gap-2 cursor-pointer hover:bg-gray-50 px-2 py-1 rounded">
+            <div className="absolute top-full left-0 z-30 bg-white border border-gray-200 rounded-lg shadow-lg p-2 min-w-40 space-y-1">
+              {memberRoleOptions.map((opt) => (
+                <label
+                  key={`${opt.member.id}__${opt.role.id}`}
+                  className="flex items-center gap-2 cursor-pointer hover:bg-gray-50 px-2 py-1 rounded"
+                >
                   <input
                     type="checkbox"
-                    checked={assignedMemberIds.has(m.id)}
-                    onChange={() => toggleMember(m.id)}
+                    checked={assignedSet.has(`${opt.member.id}__${opt.role.id}`)}
+                    onChange={() => toggleMemberRole(opt.member.id, opt.role.id)}
                     className="accent-indigo-600"
                   />
                   <span
                     className="w-3 h-3 rounded-full shrink-0"
-                    style={{ backgroundColor: m.role_data?.color ?? "#9ca3af" }}
+                    style={{ backgroundColor: opt.role.color }}
                   />
-                  <span className="text-xs text-gray-700">{m.name}</span>
+                  <span className="text-xs text-gray-700">
+                    {opt.member.name}（{opt.role.name}）
+                  </span>
                 </label>
               ))}
               <button

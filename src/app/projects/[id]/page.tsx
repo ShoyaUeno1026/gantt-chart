@@ -16,10 +16,10 @@ export default async function ProjectPage({ params }: Props) {
     await Promise.all([
       supabase.from("projects").select("*").eq("id", id).single(),
       supabase.from("roles").select("*").order("display_order"),
-      supabase.from("members").select("*, role_data:roles(*)").or(`project_id.is.null,project_id.eq.${id}`).order("name"),
+      supabase.from("members").select("*, member_roles(role:roles(*))").or(`project_id.is.null,project_id.eq.${id}`).order("name"),
       supabase
         .from("tasks")
-        .select("*, task_members(member:members(*, role_data:roles(*)))")
+        .select("*, task_members(member:members(*, member_roles(role:roles(*))), role:roles(*))")
         .eq("project_id", id)
         .order("display_order"),
     ]);

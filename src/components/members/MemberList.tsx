@@ -55,16 +55,28 @@ export default function MemberList({ initialMembers, roles }: Props) {
             className="flex items-center justify-between bg-white rounded-xl border border-gray-200 px-4 py-3 hover:border-indigo-200 transition-colors"
           >
             <div className="flex items-center gap-3">
-              {/* 役割カラーのサークル */}
+              {/* 役割カラーのサークル（複数役割は先頭の色を使用） */}
               <div
                 className="w-8 h-8 rounded-full shrink-0"
-                style={{ backgroundColor: member.role_data?.color ?? "#9ca3af" }}
+                style={{ backgroundColor: member.member_roles[0]?.role.color ?? "#9ca3af" }}
               />
               <div>
                 <p className="font-medium text-gray-900">{member.name}</p>
-                <p className="text-sm text-gray-500">
-                  {member.role_data?.name ?? "役割未設定"}
-                </p>
+                <div className="flex flex-wrap gap-1 mt-0.5">
+                  {member.member_roles.length > 0 ? (
+                    member.member_roles.map((mr) => (
+                      <span
+                        key={mr.role.id}
+                        className="text-xs px-1.5 py-0.5 rounded-full text-white"
+                        style={{ backgroundColor: mr.role.color }}
+                      >
+                        {mr.role.name}
+                      </span>
+                    ))
+                  ) : (
+                    <span className="text-sm text-gray-400">役割未設定</span>
+                  )}
+                </div>
               </div>
             </div>
             <Button variant="ghost" size="sm" onClick={() => setEditingMember(member)}>
@@ -110,37 +122,76 @@ type ModalProps = {
 
 function MemberFormModal({ member, roles, onSaved, onDeleted, onClose }: ModalProps) {
   const [name, setName] = useState(member?.name ?? "");
-  const [roleId, setRoleId] = useState(member?.role_id ?? "");
+  const [selectedRoleIds, setSelectedRoleIds] = useState<string[]>(
+    member?.member_roles.map((mr) => mr.role.id) ?? []
+  );
   const [loading, setLoading] = useState(false);
   const supabase = createClient();
-
-  // 選択中の役割データ（プレビュー表示用）
-  const selectedRole = roles.find((r) => r.id === roleId) ?? null;
 
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!name.trim()) return;
     setLoading(true);
 
-    const payload = { name: name.trim(), role_id: roleId || null };
-    let result;
     if (member) {
-      result = await supabase
+      // 名前を更新
+      const { data } = await supabase
         .from("members")
-        .update(payload)
+        .update({ name: name.trim() })
         .eq("id", member.id)
-        .select("*, role_data:roles(*)")
+        .select("*")
         .single();
+
+      if (data) {
+        // 役割の差分更新（追加・削除）
+        const currentRoleIds = member.member_roles.map((mr) => mr.role.id);
+        const toAdd = selectedRoleIds.filter((id) => !currentRoleIds.includes(id));
+        const toRemove = currentRoleIds.filter((id) => !selectedRoleIds.includes(id));
+
+        if (toAdd.length > 0) {
+          await supabase.from("member_roles").insert(
+            toAdd.map((roleId) => ({ member_id: data.id, role_id: roleId }))
+          );
+        }
+        if (toRemove.length > 0) {
+          await supabase.from("member_roles").delete()
+            .eq("member_id", data.id).in("role_id", toRemove);
+        }
+
+        // 最新データを再取得
+        const { data: fresh } = await supabase
+          .from("members")
+          .select("*, member_roles(role:roles(*))")
+          .eq("id", data.id)
+          .single();
+
+        if (fresh) onSaved(fresh as MemberWithRole);
+      }
     } else {
-      result = await supabase
+      // 新規追加
+      const { data } = await supabase
         .from("members")
-        .insert({ ...payload, role: "", color: "#6366F1", project_id: null })
-        .select("*, role_data:roles(*)")
+        .insert({ name: name.trim(), role: "", color: "#6366F1", project_id: null })
+        .select("*")
         .single();
+
+      if (data) {
+        if (selectedRoleIds.length > 0) {
+          await supabase.from("member_roles").insert(
+            selectedRoleIds.map((roleId) => ({ member_id: data.id, role_id: roleId }))
+          );
+        }
+        const { data: fresh } = await supabase
+          .from("members")
+          .select("*, member_roles(role:roles(*))")
+          .eq("id", data.id)
+          .single();
+
+        onSaved((fresh ?? { ...data, member_roles: [] }) as MemberWithRole);
+      }
     }
 
     setLoading(false);
-    if (!result.error && result.data) onSaved(result.data as MemberWithRole);
   };
 
   const handleDelete = async () => {
@@ -150,6 +201,9 @@ function MemberFormModal({ member, roles, onSaved, onDeleted, onClose }: ModalPr
     setLoading(false);
     if (!error && onDeleted) onDeleted(member.id);
   };
+
+  // プレビュー用の選択中役割リスト
+  const selectedRoles = roles.filter((r) => selectedRoleIds.includes(r.id));
 
   return (
     <Dialog open onOpenChange={(open) => !open && onClose()}>
@@ -170,30 +224,47 @@ function MemberFormModal({ member, roles, onSaved, onDeleted, onClose }: ModalPr
             />
           </div>
 
-          {/* 役割（role_id） */}
+          {/* 役割（複数選択チェックボックス） */}
           <div className="space-y-1">
-            <Label htmlFor="member-role">役割</Label>
-            <select
-              id="member-role"
-              value={roleId}
-              onChange={(e) => setRoleId(e.target.value)}
-              className="w-full text-sm border border-gray-200 rounded-md px-3 py-2 focus:border-indigo-400 outline-none"
-            >
-              <option value="">役割を選択</option>
+            <Label>役割（複数選択可）</Label>
+            <div className="flex flex-col gap-2 p-3 border border-gray-200 rounded-md">
               {roles.map((r) => (
-                <option key={r.id} value={r.id}>{r.name}</option>
+                <label key={r.id} className="flex items-center gap-2 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={selectedRoleIds.includes(r.id)}
+                    onChange={(e) => {
+                      if (e.target.checked) {
+                        setSelectedRoleIds((prev) => [...prev, r.id]);
+                      } else {
+                        setSelectedRoleIds((prev) => prev.filter((id) => id !== r.id));
+                      }
+                    }}
+                    className="accent-indigo-600"
+                  />
+                  <span className="w-3 h-3 rounded-full shrink-0" style={{ backgroundColor: r.color }} />
+                  <span className="text-sm text-gray-700">{r.name}</span>
+                </label>
               ))}
-            </select>
+            </div>
           </div>
 
-          {/* プレビュー */}
-          <div className="flex items-center gap-2 p-3 bg-gray-50 rounded-lg">
-            <div
-              className="w-6 h-6 rounded-full shrink-0"
-              style={{ backgroundColor: selectedRole?.color ?? "#9ca3af" }}
-            />
-            <span className="text-sm font-medium">{name || "担当者名"}</span>
-            <span className="text-xs text-gray-500">{selectedRole?.name ?? "役割未設定"}</span>
+          {/* プレビュー（複数バッジ） */}
+          <div className="flex items-center gap-2 p-3 bg-gray-50 rounded-lg flex-wrap">
+            <span className="text-sm font-medium text-gray-700">{name || "担当者名"}</span>
+            {selectedRoles.length > 0 ? (
+              selectedRoles.map((r) => (
+                <span
+                  key={r.id}
+                  className="text-xs text-white px-2 py-0.5 rounded-full"
+                  style={{ backgroundColor: r.color }}
+                >
+                  {r.name}
+                </span>
+              ))
+            ) : (
+              <span className="text-xs text-gray-400">役割未設定</span>
+            )}
           </div>
 
           <DialogFooter className="flex justify-between">

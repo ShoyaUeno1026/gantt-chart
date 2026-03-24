@@ -10,7 +10,7 @@ export default async function MembersSettingsPage() {
   const supabase = await createClient();
   const [{ data: members }, { data: roles }] = await Promise.all([
     // project_id IS NULL = 社内メンバーのみ（プロジェクト専用クライアントは除外）
-    supabase.from("members").select("*, role_data:roles(*)").is("project_id", null).order("created_at"),
+    supabase.from("members").select("*, member_roles(role:roles(*))").is("project_id", null).order("created_at"),
     supabase.from("roles").select("*").order("display_order"),
   ]);
 

@@ -9,20 +9,28 @@ export type Role = {
   created_at: string;
 };
 
-// 担当者（role_id で役割と紐付け）
+// member_roles 中間テーブル（メンバーと役割の多対多）
+export type MemberRole = {
+  member_id: string;
+  role_id: string;
+  role: Role;
+};
+
+// 担当者
 export type Member = {
   id: string;
   name: string;
-  role: string;             // 旧フィールド（互換性維持）
-  color: string;            // 旧フィールド（互換性維持）
-  role_id: string | null;
+  role: string;              // 旧フィールド（互換性維持）
+  color: string;             // 旧フィールド（互換性維持）
+  role_id: string | null;    // 旧フィールド（互換性維持）
   project_id: string | null; // null=社内共通、UUID=プロジェクト専用クライアント
+  tm_user_id: string | null; // TM連携用（将来のSupabase統合に備えた仮実装）
   created_at: string;
 };
 
-// 担当者（役割情報を結合した拡張型）
+// 担当者（複数役割情報を結合した拡張型）
 export type MemberWithRole = Member & {
-  role_data: Role | null;
+  member_roles: { role: Role }[]; // 多対多：担当者が持つ全役割
 };
 
 // プロジェクト
@@ -33,6 +41,7 @@ export type Project = {
   client_name: string | null;
   representative: string | null;
   end_date: string | null;
+  tm_client_id: string | null; // TM連携用（将来のSupabase統合に備えた仮実装）
   created_at: string;
 };
 
@@ -59,11 +68,16 @@ export type Task = {
 export type TaskMember = {
   task_id: string;
   member_id: string;
+  role_id: string | null; // この工程での担当役割
 };
 
-// タスク（担当者情報を結合した拡張型）
+// タスク（担当者・役割情報を結合した拡張型）
 export type TaskWithMembers = Task & {
-  task_members: { member: MemberWithRole }[];
+  task_members: {
+    member: MemberWithRole;
+    role_id: string | null;
+    role: Role | null; // この工程での担当役割（task_members.role_id で引いた役割）
+  }[];
 };
 
 // JSON エクスポート用の全データ型
