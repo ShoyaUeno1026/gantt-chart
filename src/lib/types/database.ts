@@ -1,35 +1,27 @@
-// Supabase データベースの型定義
-// テーブル構造に合わせて定義
+// データベース型定義
 
-export type Database = {
-  public: {
-    Tables: {
-      members: {
-        Row: Member;
-        Insert: Omit<Member, "id" | "created_at">;
-        Update: Partial<Omit<Member, "id" | "created_at">>;
-      };
-      projects: {
-        Row: Project;
-        Insert: Omit<Project, "id" | "created_at">;
-        Update: Partial<Omit<Project, "id" | "created_at">>;
-      };
-      tasks: {
-        Row: Task;
-        Insert: Omit<Task, "id" | "created_at" | "updated_at">;
-        Update: Partial<Omit<Task, "id" | "created_at" | "updated_at">>;
-      };
-    };
-  };
+// 役割マスター
+export type Role = {
+  id: string;
+  name: string;
+  color: string;
+  display_order: number;
+  created_at: string;
 };
 
-// 担当者（チームメンバー）
+// 担当者（role_id で役割と紐付け）
 export type Member = {
   id: string;
-  name: string;         // 担当者名
-  role: string;         // 役割（例：デザイナー、エンジニア）
-  color: string;        // カラーコード（例：#3B82F6）
+  name: string;
+  role: string;      // 旧フィールド（互換性維持）
+  color: string;     // 旧フィールド（互換性維持）
+  role_id: string | null;
   created_at: string;
+};
+
+// 担当者（役割情報を結合した拡張型）
+export type MemberWithRole = Member & {
+  role_data: Role | null;
 };
 
 // プロジェクト
@@ -37,6 +29,9 @@ export type Project = {
   id: string;
   name: string;
   description: string | null;
+  client_name: string | null;
+  representative: string | null;
+  end_date: string | null;
   created_at: string;
 };
 
@@ -45,19 +40,36 @@ export type Task = {
   id: string;
   project_id: string;
   name: string;
-  start_date: string;   // ISO 8601形式（例：2024-04-01）
-  end_date: string;     // ISO 8601形式
-  progress: number;     // 0〜100（進捗率）
-  is_completed: boolean; // チェックボックスの完了フラグ
-  member_id: string | null; // 担当者ID（外部キー）
-  type: "task" | "milestone" | "project"; // タスク種別
-  parent_id: string | null;  // 親タスクID（階層化用）
-  display_order: number;     // 表示順
+  start_date: string;
+  end_date: string;
+  is_completed: boolean;
+  notes: string | null;
+  display_order: number;
+  // 以下は旧フィールド（互換性維持）
+  progress: number;
+  member_id: string | null;
+  type: "task" | "milestone" | "project";
+  parent_id: string | null;
   created_at: string;
   updated_at: string;
 };
 
+// タスク担当者（中間テーブル）
+export type TaskMember = {
+  task_id: string;
+  member_id: string;
+};
+
 // タスク（担当者情報を結合した拡張型）
-export type TaskWithMember = Task & {
-  member: Member | null;
+export type TaskWithMembers = Task & {
+  task_members: { member: MemberWithRole }[];
+};
+
+// JSON エクスポート用の全データ型
+export type ProjectExportData = {
+  project: Project;
+  roles: Role[];
+  members: MemberWithRole[];
+  tasks: TaskWithMembers[];
+  exported_at: string;
 };
