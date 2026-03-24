@@ -195,7 +195,7 @@ export default function MemberMaster({ members, roles, projectId, onMembersChang
             type="text"
             value={newName}
             onChange={(e) => setNewName(e.target.value)}
-            onKeyDown={(e) => e.key === "Enter" && handleAdd()}
+            onKeyDown={(e) => e.key === "Enter" && !e.nativeEvent.isComposing && handleAdd()}
             placeholder="担当者名"
             className="w-full text-sm border border-gray-200 rounded-md px-2 py-1 focus:border-indigo-400 outline-none"
           />

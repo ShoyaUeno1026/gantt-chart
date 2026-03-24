@@ -106,7 +106,7 @@ export default function RoleMaster({ roles, onRolesChange }: Props) {
                 }
                 onBlur={() => handleNameUpdate(role.id)}
                 onKeyDown={(e) => {
-                  if (e.key === "Enter") { e.currentTarget.blur(); }
+                  if (e.key === "Enter" && !e.nativeEvent.isComposing) { e.currentTarget.blur(); }
                   e.stopPropagation(); // カラーパネル開閉と競合防止
                 }}
                 onClick={(e) => e.stopPropagation()} // カラーパネル開閉と競合防止
@@ -152,7 +152,7 @@ export default function RoleMaster({ roles, onRolesChange }: Props) {
           type="text"
           value={newName}
           onChange={(e) => setNewName(e.target.value)}
-          onKeyDown={(e) => e.key === "Enter" && handleAdd()}
+          onKeyDown={(e) => e.key === "Enter" && !e.nativeEvent.isComposing && handleAdd()}
           placeholder="役割名を入力"
           className="flex-1 text-sm border border-gray-200 rounded-md px-3 py-1.5 focus:border-indigo-400 outline-none"
         />
