@@ -112,13 +112,13 @@ export default function LoginPage() {
           </button>
         </div>
 
-        {/* Googleログイン */}
+        {/* Googleログイン（未実装） */}
         <Button
           type="button"
           variant="outline"
-          className="w-full"
-          onClick={handleGoogleLogin}
-          disabled={loading}
+          className="w-full opacity-40 cursor-not-allowed"
+          disabled
+          title="Google認証は現在準備中です"
         >
           <svg className="w-4 h-4 mr-2" viewBox="0 0 24 24">
             <path
@@ -138,7 +138,7 @@ export default function LoginPage() {
               fill="#EA4335"
             />
           </svg>
-          Google で{isSignUp ? "登録" : "ログイン"}
+          Google で{isSignUp ? "登録" : "ログイン"}（準備中）
         </Button>
 
         <div className="relative">
