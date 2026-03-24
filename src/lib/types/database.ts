@@ -13,9 +13,10 @@ export type Role = {
 export type Member = {
   id: string;
   name: string;
-  role: string;      // 旧フィールド（互換性維持）
-  color: string;     // 旧フィールド（互換性維持）
+  role: string;             // 旧フィールド（互換性維持）
+  color: string;            // 旧フィールド（互換性維持）
   role_id: string | null;
+  project_id: string | null; // null=社内共通、UUID=プロジェクト専用クライアント
   created_at: string;
 };
 

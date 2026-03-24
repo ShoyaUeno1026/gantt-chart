@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef, useCallback } from "react";
+import { useState, useRef } from "react";
 import { createClient } from "@/lib/supabase/client";
 import type {
   Project, Role, MemberWithRole, TaskWithMembers, ProjectExportData,
@@ -188,6 +188,7 @@ export default function ProjectClient({
           <MemberMaster
             members={members}
             roles={roles}
+            projectId={project.id}
             onMembersChange={setMembers}
           />
           <RoleMaster
@@ -213,7 +214,7 @@ export default function ProjectClient({
               >
                 ◄ 前週
               </button>
-              <span className="text-xs text-gray-500 min-w-[100px] text-center">
+              <span className="text-xs text-gray-500 min-w-25 text-center">
                 {viewStartDate.getMonth() + 1}/{viewStartDate.getDate()} 〜{" "}
                 {new Date(viewStartDate.getTime() + totalDays * 86400000).getMonth() + 1}/
                 {new Date(viewStartDate.getTime() + totalDays * 86400000).getDate()}

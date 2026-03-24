@@ -16,7 +16,7 @@ export default async function ProjectPage({ params }: Props) {
     await Promise.all([
       supabase.from("projects").select("*").eq("id", id).single(),
       supabase.from("roles").select("*").order("display_order"),
-      supabase.from("members").select("*, role_data:roles(*)").order("name"),
+      supabase.from("members").select("*, role_data:roles(*)").or(`project_id.is.null,project_id.eq.${id}`).order("name"),
       supabase
         .from("tasks")
         .select("*, task_members(member:members(*, role_data:roles(*)))")
