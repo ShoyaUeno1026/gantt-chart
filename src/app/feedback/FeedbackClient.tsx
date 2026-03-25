@@ -10,6 +10,7 @@ import type { Feedback } from "@/lib/types/database";
 type Props = {
   initialFeedbacks: Feedback[];
   displayName: string;
+  currentUserId: string;
 };
 
 // カテゴリに応じたバッジのバリアントを返す
@@ -28,7 +29,7 @@ function formatDate(dateStr: string) {
   });
 }
 
-export default function FeedbackClient({ initialFeedbacks, displayName }: Props) {
+export default function FeedbackClient({ initialFeedbacks, displayName, currentUserId }: Props) {
   const [feedbacks, setFeedbacks] = useState<Feedback[]>(initialFeedbacks);
   const [category, setCategory] = useState("");
   const [body, setBody] = useState("");
@@ -212,22 +213,27 @@ export default function FeedbackClient({ initialFeedbacks, displayName }: Props)
           <span className="text-sm font-medium text-gray-700">{fb.display_name}</span>
           <span className="text-xs text-gray-400">{formatDate(fb.created_at)}</span>
           <div className="ml-auto flex items-center gap-0.5">
-            <Button
-              variant="ghost"
-              size="sm"
-              className="h-6 px-2 text-xs text-gray-400 hover:text-gray-700"
-              onClick={() => startEdit(fb)}
-            >
-              編集
-            </Button>
-            <Button
-              variant="ghost"
-              size="sm"
-              className="h-6 px-2 text-xs text-red-400 hover:text-red-600"
-              onClick={() => handleDelete(fb.id)}
-            >
-              削除
-            </Button>
+            {/* 自分の投稿のみ編集・削除を表示 */}
+            {fb.user_id === currentUserId && (
+              <>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="h-6 px-2 text-xs text-gray-400 hover:text-gray-700"
+                  onClick={() => startEdit(fb)}
+                >
+                  編集
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="h-6 px-2 text-xs text-red-400 hover:text-red-600"
+                  onClick={() => handleDelete(fb.id)}
+                >
+                  削除
+                </Button>
+              </>
+            )}
             {fb.is_resolved ? (
               <Button
                 variant="ghost"

@@ -36,6 +36,7 @@ export default async function FeedbackPage() {
         <FeedbackClient
           initialFeedbacks={(feedbacks ?? []) as Feedback[]}
           displayName={displayName}
+          currentUserId={user.id}
         />
       </main>
     </div>

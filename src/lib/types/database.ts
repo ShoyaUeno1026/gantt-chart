@@ -80,6 +80,15 @@ export type TaskWithMembers = Task & {
   }[];
 };
 
+// 管理者ページで使用するユーザー型（auth.users から抽出）
+export type AdminUser = {
+  id: string;
+  email: string;
+  display_name: string;
+  is_admin: boolean;
+  created_at: string;
+};
+
 // フィードバック
 export type Feedback = {
   id: string;
