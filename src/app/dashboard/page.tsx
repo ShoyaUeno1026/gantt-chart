@@ -20,6 +20,9 @@ export default async function DashboardPage() {
       <header className="bg-white border-b border-gray-200 px-6 py-4 flex items-center justify-between">
         <h1 className="text-lg font-bold text-gray-900">工程表ガントチャート</h1>
         <div className="flex items-center gap-3">
+          <Link href="/feedback">
+            <Button variant="outline" size="sm">フィードバック</Button>
+          </Link>
           <Link href="/settings/members">
             <Button variant="outline" size="sm">担当者管理</Button>
           </Link>

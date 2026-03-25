@@ -80,6 +80,17 @@ export type TaskWithMembers = Task & {
   }[];
 };
 
+// フィードバック
+export type Feedback = {
+  id: string;
+  user_id: string;
+  display_name: string; // 投稿時のユーザー表示名（スナップショット）
+  category: string;
+  body: string;
+  is_resolved: boolean;
+  created_at: string;
+};
+
 // JSON エクスポート用の全データ型
 export type ProjectExportData = {
   project: Project;

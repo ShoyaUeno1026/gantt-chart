@@ -94,6 +94,28 @@ ALTER PUBLICATION supabase_realtime ADD TABLE tasks;
 ALTER PUBLICATION supabase_realtime ADD TABLE members;
 ALTER PUBLICATION supabase_realtime ADD TABLE projects;
 
+-- フィードバックテーブル
+CREATE TABLE IF NOT EXISTS feedbacks (
+  id           UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id      UUID NOT NULL REFERENCES auth.users(id) ON DELETE SET NULL,
+  display_name TEXT NOT NULL,        -- 投稿時のユーザー表示名（スナップショット）
+  category     TEXT NOT NULL,        -- カテゴリ（バグ報告・改善要望など）
+  body         TEXT NOT NULL,        -- フィードバック本文
+  is_resolved  BOOLEAN NOT NULL DEFAULT false, -- 対応完了フラグ
+  created_at   TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+ALTER TABLE feedbacks ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY "ログインユーザーは全フィードバックを閲覧できる"
+  ON feedbacks FOR SELECT TO authenticated USING (true);
+CREATE POLICY "ログインユーザーはフィードバックを投稿できる"
+  ON feedbacks FOR INSERT TO authenticated WITH CHECK (auth.uid() = user_id);
+CREATE POLICY "ログインユーザーはフィードバックを更新できる"
+  ON feedbacks FOR UPDATE TO authenticated USING (true);
+CREATE POLICY "ログインユーザーはフィードバックを削除できる"
+  ON feedbacks FOR DELETE TO authenticated USING (true);
+
 -- =====================================================
 -- サンプルデータ（動作確認用）
 -- =====================================================
