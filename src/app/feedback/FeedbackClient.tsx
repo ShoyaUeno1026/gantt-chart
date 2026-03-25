@@ -234,25 +234,7 @@ export default function FeedbackClient({ initialFeedbacks, displayName, currentU
                 </Button>
               </>
             )}
-            {fb.is_resolved ? (
-              <Button
-                variant="ghost"
-                size="sm"
-                className="h-6 px-2 text-xs text-gray-400 hover:text-gray-600"
-                onClick={() => handleResolveToggle(fb)}
-              >
-                解除
-              </Button>
-            ) : (
-              <Button
-                variant="outline"
-                size="sm"
-                className="h-6 px-2 text-xs text-green-600 border-green-300 hover:bg-green-50"
-                onClick={() => handleResolveToggle(fb)}
-              >
-                対応完了
-              </Button>
-            )}
+            {/* 対応完了トグルは管理者のみ（管理ページから操作） */}
           </div>
         </div>
 
