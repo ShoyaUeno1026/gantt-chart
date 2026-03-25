@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
 import { useRouter } from "next/navigation";
+import FeedbackDialog from "@/components/feedback/FeedbackDialog";
 
 type Props = {
   onClear: () => void;
@@ -101,6 +102,9 @@ export default function PageHeader({
         >
           {saving ? "保存中..." : "保存"}
         </button>
+
+        {/* フィードバック */}
+        <FeedbackDialog />
 
         {/* ログアウト */}
         <button
