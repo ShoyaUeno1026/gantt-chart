@@ -13,11 +13,15 @@ type Props = {
   currentUserId: string;
 };
 
-// カテゴリに応じたバッジのバリアントを返す
-function categoryVariant(category: string) {
-  if (category === "バグ報告") return "destructive" as const;
-  if (category === "改善要望" || category === "新機能リクエスト") return "default" as const;
-  return "secondary" as const;
+// カテゴリに応じたバッジのスタイルを返す
+function categoryBadgeClass(category: string): string {
+  switch (category) {
+    case "バグ報告":        return "bg-red-100 text-red-700 border-red-200";
+    case "改善要望":        return "bg-blue-100 text-blue-700 border-blue-200";
+    case "新機能リクエスト": return "bg-purple-100 text-purple-700 border-purple-200";
+    case "UIに関するご意見": return "bg-orange-100 text-orange-700 border-orange-200";
+    default:               return "bg-gray-100 text-gray-600 border-gray-200";
+  }
 }
 
 // 日付を日本語フォーマットで返す
@@ -209,7 +213,7 @@ export default function FeedbackClient({ initialFeedbacks, displayName, currentU
           {fb.is_resolved && (
             <Badge variant="outline" className="text-green-600 border-green-300">✓ 対応完了</Badge>
           )}
-          <Badge variant={categoryVariant(fb.category)}>{fb.category}</Badge>
+          <Badge variant="outline" className={categoryBadgeClass(fb.category)}>{fb.category}</Badge>
           <span className="text-sm font-medium text-gray-700">{fb.display_name}</span>
           <span className="text-xs text-gray-400">{formatDate(fb.created_at)}</span>
           <div className="ml-auto flex items-center gap-0.5">
