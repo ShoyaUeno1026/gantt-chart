@@ -62,8 +62,14 @@ export default function LoginPage() {
         email,
         password,
       });
-      if (error) setMessage(error.message);
-      else router.push("/dashboard");
+      if (error) {
+        setMessage(error.message);
+        setLoading(false);
+      } else {
+        // ログイン成功：オーバーレイを維持したままナビゲーション
+        router.push("/dashboard");
+      }
+      return;
     }
     setLoading(false);
   };
@@ -90,6 +96,16 @@ export default function LoginPage() {
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-50">
+      {/* 認証処理中のオーバーレイ */}
+      {loading && (
+        <div className="fixed inset-0 bg-white/80 backdrop-blur-sm flex items-center justify-center z-50">
+          <div className="flex flex-col items-center gap-4">
+            <div className="w-10 h-10 border-4 border-indigo-600 border-t-transparent rounded-full animate-spin" />
+            <p className="text-sm font-medium text-gray-600">処理中...</p>
+          </div>
+        </div>
+      )}
+
       <div className="w-full max-w-md bg-white rounded-2xl shadow-sm p-8 space-y-6">
 
         {/* アプリ名（常に表示） */}
